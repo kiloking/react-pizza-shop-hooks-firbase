@@ -1,25 +1,30 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, {useState} from 'react';
 
+import {Navbar} from './Navbar/Navbar'
+import {Banner} from './Banner/Banner'
+import {Menu} from './Menu/Menu'
+import {GlobalStyle} from './Styles/GlobalStyle'
+import {FoodDialog} from './FoodDialog/FoodDialog'
+import {Order}from './Order/Order'
+import {useOpenFood} from './Hooks/useOpenFood'
+import {useOrders}from './Hooks/useOrders'
+import {useTitle} from './Hooks/useTitle'
 function App() {
+  //食物分類用 會按照SECTION區分 進化成用載入的
+  const openFood = useOpenFood();
+  const orders = useOrders()
+  useTitle({...openFood , ...orders})
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      <GlobalStyle/>
+      <FoodDialog {...openFood} {...orders}/>
+      <Navbar/>
+      <Order {...orders}/>
+      <Banner/>
+      <Menu {...openFood} />
+
+      
+    </>
   );
 }
 
