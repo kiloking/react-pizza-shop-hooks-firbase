@@ -3,6 +3,8 @@ import styled from 'styled-components'
 import {DialogContent,DialogFooter,ConfirmButton} from '../FoodDialog/FoodDialog'
 import {formatPrice}from '../Data/FoodData'
 import {getPrice} from '../FoodDialog/FoodDialog'
+
+const database = window.firebase.database()
 const OrderStyled = styled.div`
   position:fixed;
   right:0px;
@@ -25,6 +27,16 @@ const OrderContent = styled(DialogContent)`
 const OrderContainer = styled.div`
   padding: 10px 0px;
   border-bottom : 1px solid grey;
+  ${({editable}) =>
+  editable ? `
+    &:hover{
+      cursor:pointer;
+      background-color:#e7e7e7;
+    }
+  ` :`
+    pointer-events:none;
+  `
+  };
 `
 const OrderItem = styled.div`
   padding:10px 0px;
@@ -32,13 +44,49 @@ const OrderItem = styled.div`
   grid-template-columns: 20px 150px 20px 60px;
   justify-content:space-between;
 `
-
-export function Order({orders}){
+const DetailItem = styled.div`
+  color:gray;
+  font-size:10px;
+`
+function sendOrder(orders, { email, displayName}){
+  const newOrderRef = database.ref('orders').push()
+  const newOrders = orders.map(order =>{
+    return Object.keys(order).reduce((acc,orderKey) =>{
+      if(!order[orderKey]){
+        return acc
+      }
+      if(orderKey === 'toppings'){
+        return{
+          ...acc,
+          [orderKey]: order[orderKey]
+          .filter(({checked}) => checked)
+          .map(({name}) => name)
+        }
+      }
+      return{
+        ...acc,
+        [orderKey]:order[orderKey]
+      }
+    },{})
+  })
+  newOrderRef.set({
+    order:newOrders,
+    email,
+    displayName
+  })
+}
+export function Order({orders,setOrders , setOpenFood , login , loggedIn , setOpenOrderDialog}){
   const subtotal = orders.reduce((total,order) =>{
     return total + getPrice(order)
   },0);
   const tax = subtotal *0.07;
   const total = subtotal + tax
+
+  const deleteItem = index =>{
+    const newOrders = [...orders]
+    newOrders.splice(index,1)
+    setOrders(newOrders)
+  }
   return( 
   <OrderStyled> 
       {orders.length === 0 ? (<OrderContent>order gogo</OrderContent>)
@@ -46,14 +94,28 @@ export function Order({orders}){
       <OrderContent> 
         {" "}
         <OrderContainer>Your orders</OrderContainer>{" "}
-        {orders.map(order => (
-          <OrderContainer>
-            <OrderItem>
+        {orders.map((order,index) => (
+          <OrderContainer editable>
+            <OrderItem onClick={()=>{
+              setOpenFood({...order , index})
+            }}>
+              
               <div>{order.quantity}</div>
               <div>{order.name}</div>
-              <div/>
+              <div 
+                style={{cursor:'pointer'}} 
+                onClick={e => {
+                  e.stopPropagation()
+                  deleteItem(index)}}>🗑</div>
               <div>{formatPrice(getPrice(order))}</div>
             </OrderItem>
+            <DetailItem>
+              {order.toppings
+              .filter(t => t.checked)
+              .map(topping => topping.name)
+              .join(", ")}
+            </DetailItem>
+            {order.choice && <DetailItem>{order.choice}</DetailItem>}
           </OrderContainer>
         ))}
         <OrderContainer>
@@ -77,9 +139,18 @@ export function Order({orders}){
       
       )}
       
-      <DialogFooter>
-        <ConfirmButton>checkout</ConfirmButton>
-      </DialogFooter>
+      {orders.length > 0 && <DialogFooter>
+        <ConfirmButton onClick={()=>{
+          if(loggedIn){
+            setOpenOrderDialog(true)
+            sendOrder(orders, loggedIn)
+            // setOrders(orders,loggedIn)
+          }else{
+            // login(setOpenOrderDialog)
+            login()
+          }
+        }}>checkout</ConfirmButton>
+      </DialogFooter>}
   </OrderStyled>  
   )
 }

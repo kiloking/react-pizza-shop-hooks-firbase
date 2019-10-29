@@ -5,6 +5,7 @@ export const FoodGrid = styled.div`
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:20px;
+    padding-bottom:40px;
 `
 
 export const FoodLabel = styled(Title)`
@@ -28,7 +29,7 @@ export const Food = styled.div`
     &:hover{
         cursor: pointer;
         opacity: 0.7;
-        filter:contrast(100%)
+        filter:contrast(100%);
         margin-top:-5px;
     }
 
